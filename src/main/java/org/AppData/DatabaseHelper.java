@@ -26,7 +26,7 @@ public class DatabaseHelper {
                 connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
                 statement = connection.createStatement();
                 System.out.println("Database connected!");
-                //statement.execute("DROP ALL OBJECTS"); // Use to clear the database
+                statement.execute("DROP ALL OBJECTS"); // Use to clear the database
 
                 createTables();
             }
@@ -38,14 +38,22 @@ public class DatabaseHelper {
     private static void createTables() throws SQLException {
         String userTable = "CREATE TABLE IF NOT EXISTS users ("
                 + "id INT AUTO_INCREMENT PRIMARY KEY, "
-                + "username VARCHAR(255) UNIQUE, "
-                + "password VARCHAR(255), "
-                + "Admin BOOLEAN DEFAULT FALSE, "
-                + "Student BOOLEAN DEFAULT FALSE, "
-                + "Reviewer BOOLEAN DEFAULT FALSE, "
-                + "Instructor BOOLEAN DEFAULT FALSE, "
-                + "Staff BOOLEAN DEFAULT FALSE)";
+                + "username VARCHAR(255) UNIQUE NOT NULL, "
+                + "password VARCHAR(255) NOT NULL)";
         statement.execute(userTable);
+
+        String roleTable = "CREATE TABLE IF NOT EXISTS roles ("
+                + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                + "role_name VARCHAR(50) UNIQUE NOT NULL)";
+        statement.execute(roleTable);
+
+        String userRolesTable = "CREATE TABLE IF NOT EXISTS user_roles ("
+                + "user_id INT NOT NULL, "
+                + "role_id INT NOT NULL, "
+                + "PRIMARY KEY (user_id, role_id), "
+                + "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, "
+                + "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE)";
+        statement.execute(userRolesTable);
     }
 
     public static void closeConnection() {

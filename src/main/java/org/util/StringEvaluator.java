@@ -16,6 +16,7 @@ public class StringEvaluator {
         char currentChar = password.charAt(0);
         int currentCharIndex = 0;
 
+        // WIP
         while (processing) {
 
             currentCharIndex++;
@@ -47,6 +48,7 @@ public class StringEvaluator {
         char currentChar = username.charAt(0);
         int currentCharIndex = 0;
 
+        // WIP
         while (processing) {
 
             currentCharIndex++;

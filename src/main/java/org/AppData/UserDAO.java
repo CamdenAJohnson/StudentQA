@@ -4,6 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.AppData.DatabaseHelper;
 import org.util.PasswordHasher;
@@ -35,22 +37,26 @@ public class UserDAO {
         }
 
         String sql = "SELECT * FROM users WHERE username = ?";
-        User user = null;
 
-
-        try {
-            PreparedStatement statement = connection.prepareStatement(sql);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, username);
             ResultSet rs = statement.executeQuery();
+
             if (rs.next()) {
                 String storedHash = rs.getString("password");
                 if (storedHash.equals(hashedPassword)) {
-                    user = new User(rs.getInt("id"), rs.getString("username"));
+                    Set<String> roles = getUserRoles(username);
+                    User user = new User(rs.getInt("id"), rs.getString("username"), roles);
                     UserSession.getInstance(user.getUsername(), user.getUserID());
+                    System.out.println("Login successful for: " + username);
+                } else {
+                    System.err.println("Invalid password.");
                 }
+            } else {
+                System.err.println("User not found.");
             }
         } catch (SQLException e) {
-            System.err.println("Failed to login. " + e.getMessage());
+            System.err.println("Login unsuccessful: " + e.getMessage());
         }
     }
 
@@ -63,19 +69,43 @@ public class UserDAO {
         String sql = "SELECT * FROM users WHERE id = ?";
         User user = null;
 
-        try {
-            PreparedStatement statement = connection.prepareStatement(sql);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             ResultSet rs = statement.executeQuery();
+
             if (rs.next()) {
-                user = new User(rs.getInt("id"), rs.getString("username"));
+                String username = rs.getString("username");
+                Set<String> roles = getUserRoles(username);
+
+                user = new User(rs.getInt("id"), username, roles);
             } else {
                 System.out.println("No user was found with the given id: " + id);
             }
         } catch (SQLException e) {
             System.err.println("Failed to find user by id. " + e.getMessage());
         }
+
         return user;
+    }
+
+    public static Set<String> getUserRoles(String username) throws SQLException {
+        Set<String> roles = new HashSet<>();
+        String query = "SELECT r.role_name FROM roles r " +
+                "JOIN user_roles ur ON r.id = ur.role_id " +
+                "JOIN users u ON u.id = ur.user_id " +
+                "WHERE u.username = ?";
+
+        try {
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setString(1, username);
+            ResultSet rs = statement.executeQuery();
+            while (rs.next()) {
+                roles.add(rs.getString("role_name"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to find user roles. " +e.getMessage());
+        }
+        return roles;
     }
 }
 
